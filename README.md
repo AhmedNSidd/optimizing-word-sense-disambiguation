@@ -5,8 +5,8 @@
 This repository contains the implementation and optimization efforts of the
 Simplified Sense Word Disambiguation (WSD) algorithm written in C++ as part of
 UVic's CSC485C course project. This project belongs to:
-[Ahmed Siddiqui](emailto:jesuisahmedn@gmail.com) and
-[Jordan Kirchner](emailto:JordanKirchner04@hotmail.com)
+[Ahmed Siddiqui](mailto:jesuisahmedn@gmail.com) and
+[Jordan Kirchner](mailto:JordanKirchner04@hotmail.com)
 
 ## Implementation
 
