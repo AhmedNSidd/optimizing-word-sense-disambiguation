@@ -13,3 +13,7 @@ UVic's CSC485C course project. This project belongs to:
 The algorithm implementated is based on the simplified version of
 [Michael Lesk's algorithm](https://en.wikipedia.org/wiki/Lesk_algorithm#Simplified_Lesk_algorithm)
 devised in 1986.
+
+# Running the program 
+
+- bits c++ file (https://apple.stackexchange.com/a/367285 and -lstdc++)
