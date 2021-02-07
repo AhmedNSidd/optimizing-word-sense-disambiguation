@@ -16,4 +16,7 @@ devised in 1986.
 
 # Running the program 
 
-- bits c++ file (https://apple.stackexchange.com/a/367285 and -lstdc++)
+- Add bits file to your computer (https://apple.stackexchange.com/a/367285)
+
+Run using:
+`g++ simplified_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -o output`

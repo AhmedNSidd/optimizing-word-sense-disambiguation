@@ -23,7 +23,7 @@ end return (best-sense)
 
 #include <iostream>
 #include <string>
-#include <bits/stdc++.h>
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
 #include "simplified_wsd.hpp"
