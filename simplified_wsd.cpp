@@ -23,7 +23,8 @@ end return (best-sense)
 
 #include <iostream>
 #include <string>
-#include <bits/stdc++.h>
+#include <set>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
 
