@@ -26,27 +26,21 @@ end return (best-sense)
 #include <bits/stdc++.h>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
-
+#include "simplified_wsd.hpp"
 
 using json = nlohmann::json;
 using namespace std;
 
-int compute_overlap(string sense, vector<string> context);
-void get_all_senses(string word, vector<string> &all_senses);
-void get_word_set(string word, string sentence);
-set<string> iterate_n_add(string sentence);
 
-int compute_overlap(string sense, vector<string> context)
-{
+int compute_overlap(string sense, set<string> context) {
     /*
     In this function, we want to go tokenize the sense. After that, we want to compute the
     */
-    vector<string> sense_tokens;
     int overlap = 0;
-    get_word_set(sense, sense_tokens);
-    for (int i = 0; i < sense_tokens.size(); i++) {
-        for (int j = 0; j < context.size()) {
-            if (boost::iequals(sense_tokens[i], context[j])) {
+    set<string> sense_tokens = tokenize_string(sense);
+    for (set<string>::iterator i = sense_tokens.begin(); i != sense_tokens.end(); i++) {
+        for (set<string>::iterator j = context.begin(); j != context.end(); j++) {
+            if (boost::iequals(*i, *j)) {
                 overlap++;
             }
         }
@@ -54,8 +48,7 @@ int compute_overlap(string sense, vector<string> context)
     return overlap;
 }
 
-void get_all_senses(string word, vector<string> &all_senses)
-{
+void get_all_senses(string word, vector<string> &all_senses) {
     /* 
     This function will query dictionary.json and get the definition of the
     word. It will then parse through the definition and get all the senses.
@@ -72,13 +65,13 @@ void get_all_senses(string word, vector<string> &all_senses)
     }
 }
 
-void get_word_set(string word, string sentence)
-{
-    set<string> words = iterate_n_add(sentence);
+set<string> get_word_set(string word, string sentence) {
+    set<string> words = tokenize_string(sentence);
     words.erase(word);
+    return words;
 }
 
-set<string> iterate_n_add(string sentence){
+set<string> tokenize_string(string sentence) {
     stringstream stream(sentence);
     set<string> words;
     string tmp;
@@ -90,14 +83,11 @@ set<string> iterate_n_add(string sentence){
 }
 
 
-
-string simplified_wsd(string word, string sentence)
-{
+string simplified_wsd(string word, string sentence) {
     string best_sense;
     int max_overlap = 0;
-    vector<string> context; // This is the set of words in a sentence excluding the word itself.
+    set<string> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
     vector<string> all_senses; // This is all the senses of the word.
-    get_word_set(word, sentence);
     get_all_senses(word, all_senses);
     for (int i = 0; i < all_senses.size(); i++) {
         int overlap = compute_overlap(all_senses[i], context);
@@ -112,7 +102,7 @@ string simplified_wsd(string word, string sentence)
 
 int main()
 {
-    cout << "Find the best sense of the word 'stock' in the following sentence:\n\tThese stores sell excess stock or factory overruns\n";
-    cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "These stores sell excess stock or factory overruns") << "\n";
+    cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
+    cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
     return 0;
 }
