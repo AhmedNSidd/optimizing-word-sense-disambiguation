@@ -27,9 +27,14 @@ end return (best-sense)
 
 using namespace std;
 
-void compute_overlap(string sense, vector<string> context)
+int compute_overlap(string sense, vector<string> context);
+void get_all_senses(string word, vector<string> &all_senses);
+void get_word_set(string word, string sentence);
+set<string> iterate_n_add(string sentence);
+
+int compute_overlap(string sense, vector<string> context)
 {
-    return;
+    return 0;
 }
 
 void get_all_senses(string word, vector<string> &all_senses)
@@ -37,15 +42,24 @@ void get_all_senses(string word, vector<string> &all_senses)
     return;
 }
 
-void get_word_set(string sentence, vector<string> &tokens)
+void get_word_set(string word, string sentence)
 {
-    stringstream check1(sentence);
-    string tmp;
-
-    while (getline(check1, tmp, ' ')) {
-        tokens.push_back(tmp);
-    }
+    set<string> words = iterate_n_add(sentence);
+    words.erase(word);
 }
+
+set<string> iterate_n_add(string sentence){
+    stringstream stream(sentence);
+    set<string> words;
+    string tmp;
+    while (getline(stream, tmp, ' ')) {
+        words.insert(tmp);
+    }
+    
+    return words;
+}
+
+
 
 string simplified_wsd(string word, string sentence)
 {
@@ -53,11 +67,11 @@ string simplified_wsd(string word, string sentence)
     int max_overlap = 0;
     vector<string> context; // This is the set of words in a sentence.
     vector<string> all_senses; // This is all the senses of the word.
-    get_word_set(sentence, context);
+    get_word_set(word, sentence);
     get_all_senses(word, all_senses);
     for (int i = 0; i < all_senses.size(); i++) {
         int overlap = compute_overlap(all_senses[i], context);
-        if overlap > max_overlap {
+        if (overlap > max_overlap) {
             max_overlap = overlap;
             best_sense = all_senses[i];
         }
@@ -68,7 +82,7 @@ string simplified_wsd(string word, string sentence)
 
 int main()
 {
-    cout << "Find the best sense of the word 'stock' in the following sentence: These stores sell excess stock or factory overruns":
-    cout << "The best sense of the word stock in our example is: " << simplified_wsd("stock", "These stores sell excess stock or factory overruns");
+    cout << "Find the best sense of the word 'stock' in the following sentence:\n\tThese stores sell excess stock or factory overruns\n";
+    cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "These stores sell excess stock or factory overruns") << "\n";
     return 0;
 }
