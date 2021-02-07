@@ -24,17 +24,33 @@ end return (best-sense)
 #include <iostream>
 #include <string>
 #include <bits/stdc++.h>
+#include <nlohmann/json.hpp>
 
+
+using json = nlohmann::json;
 using namespace std;
 
-void compute_overlap(string sense, vector<string> context)
+int compute_overlap(string sense, vector<string> context)
 {
-    return;
+    return 0;
 }
 
 void get_all_senses(string word, vector<string> &all_senses)
 {
-    return;
+    /* 
+    This function will query dictionary.json and get the definition of the
+    word. It will then parse through the definition and get all the senses.
+    It will then store all those senes in the given vector: all_senses
+    */
+    // read a JSON file
+    std::ifstream i("dictionary.json");
+    json j;
+    i >> j;
+
+    vector<string> definitions = j[word];
+    for (int i = 0; i < definitions.size(); i++) {
+        all_senses.push_back(definitions[i]);
+    }
 }
 
 void get_word_set(string sentence, vector<string> &tokens)
@@ -57,7 +73,7 @@ string simplified_wsd(string word, string sentence)
     get_all_senses(word, all_senses);
     for (int i = 0; i < all_senses.size(); i++) {
         int overlap = compute_overlap(all_senses[i], context);
-        if overlap > max_overlap {
+        if (overlap > max_overlap) {
             max_overlap = overlap;
             best_sense = all_senses[i];
         }
@@ -68,7 +84,7 @@ string simplified_wsd(string word, string sentence)
 
 int main()
 {
-    cout << "Find the best sense of the word 'stock' in the following sentence: These stores sell excess stock or factory overruns":
-    cout << "The best sense of the word stock in our example is: " << simplified_wsd("stock", "These stores sell excess stock or factory overruns");
+    vector<string> all_senses;
+    get_all_senses("stock", all_senses);
     return 0;
 }
