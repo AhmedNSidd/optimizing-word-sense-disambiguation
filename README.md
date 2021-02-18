@@ -16,7 +16,21 @@ devised in 1986.
 
 # Running the program 
 
-- Add bits file to your computer (https://apple.stackexchange.com/a/367285)
-
-Run using:
+Create an executable using the following command:
 `g++ simplified_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -o output`
+
+Or alternatively build an object file:
+`g++ simplified_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o`
+
+And using this object file, you can create a library of the WSD program. 
+
+`ar rcs wsd.a output.o`
+
+Finally, you can use this wsd library to compile with the microbenchmarking
+program for microbenchmarking:
+
+`g++ benchmark.cc -std=c++11 -isystem benchmark/include \\n  -Lbenchmark/build/src -lbenchmark -lpthread -o mybenchmark wsd.a`
+
+And then just run the executable:
+
+`./mybenchmark`
