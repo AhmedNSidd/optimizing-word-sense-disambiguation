@@ -57,7 +57,10 @@ void get_all_senses(string word, vector<string> &all_senses) {
     It will then store all those senes in the given vector: all_senses
     */
     // read a JSON file
-    std::ifstream i("dictionary.json");
+    string dictionary_name = "new_dictionary/";
+    dictionary_name += word[0];
+    dictionary_name += ".json";
+    std::ifstream i(dictionary_name);
     json j;
     i >> j;
 
