@@ -29,7 +29,7 @@ And using this object file, you can create a library of the WSD program.
 Finally, you can use this wsd library to compile with the microbenchmarking
 program for microbenchmarking:
 
-`g++ benchmark.cc -std=c++11 -isystem benchmark/include \\n  -Lbenchmark/build/src -lbenchmark -lpthread -o mybenchmark wsd.a`
+`g++ benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o mybenchmark wsd.a`
 
 And then just run the executable:
 
