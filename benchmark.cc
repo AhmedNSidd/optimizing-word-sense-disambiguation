@@ -1,5 +1,5 @@
 #include <benchmark/benchmark.h>
-#include "simplified_wsd.hpp"
+#include "wsd.hpp"
 
 static void BM_StringCreation(benchmark::State& state) {
   for (auto _ : state)

@@ -28,7 +28,7 @@ end return (best-sense)
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
-#include "simplified_wsd.hpp"
+#include "wsd.hpp"
 
 using json = nlohmann::json;
 using namespace std;
