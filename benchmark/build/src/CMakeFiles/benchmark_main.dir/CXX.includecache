@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/benchmark/benchmark.h
+stdint.h
+-
+algorithm
+-
+cassert
+-
+cstddef
+-
+iosfwd
+-
+map
+-
+set
+-
+string
+-
+utility
+-
+vector
+-
+initializer_list
+-
+type_traits
+-
+utility
+-
+intrin.h
+-
+
+/Users/ahmedsiddiqui/Desktop/Workspace/UVic/Winter_2021/CSC485C/wsd-485c/benchmark/src/benchmark_main.cc
+benchmark/benchmark.h
+/Users/ahmedsiddiqui/Desktop/Workspace/UVic/Winter_2021/CSC485C/wsd-485c/benchmark/src/benchmark/benchmark.h
+
