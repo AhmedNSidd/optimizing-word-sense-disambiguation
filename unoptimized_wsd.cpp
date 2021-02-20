@@ -38,13 +38,23 @@ int compute_overlap(string sense, set<string> context) {
     /*
     In this function, we want to go tokenize the sense. After that, we want to compute the
     */
+   
+    auto const cache_line_size = 64u;
+    auto const tile_size = cache_line_size / 8; // median word size is 4.7 characters, so we expect to easily fit 8 words into the cache.
+    
     int overlap = 0;
     set<string> sense_tokens = tokenize_string(sense);
-    for (set<string>::iterator i = sense_tokens.begin(); i != sense_tokens.end(); i++) {
-        for (set<string>::iterator j = context.begin(); j != context.end(); j++) {
-            if (boost::iequals(*i, *j)) {
-                overlap++;
-            }
+    
+    std::vector<string> vector_sense(sense_tokens.begin(), sense_tokens.end());
+    std::vector<string> vector_context(context.begin(), context.end());
+    
+    auto const n = vector_sense.size();
+    auto const o = vector_context.size();
+    
+    for(auto i = 0u; i < n; i++){
+        for (auto j = 0u; j < o; j++){
+                    if (boost::iequals(vector_sense[i], vector_context[j]))
+                        overlap++;
         }
     }
     return overlap;
@@ -100,4 +110,11 @@ string simplified_wsd(string word, string sentence) {
     }
 
     return best_sense;
+}
+
+int main()
+{
+    cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
+    cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
+    return 0;
 }

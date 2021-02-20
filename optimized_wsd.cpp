@@ -38,15 +38,34 @@ int compute_overlap(string sense, set<string> context) {
     /*
     In this function, we want to go tokenize the sense. After that, we want to compute the
     */
+    
+    auto const cache_line_size = 64u;
+    auto const tile_size = cache_line_size / 8; // median word size is 4.7 characters, so we expect to easily fit 8 words into the cache.
+    
     int overlap = 0;
     set<string> sense_tokens = tokenize_string(sense);
-    for (set<string>::iterator i = sense_tokens.begin(); i != sense_tokens.end(); i++) {
-        for (set<string>::iterator j = context.begin(); j != context.end(); j++) {
-            if (boost::iequals(*i, *j)) {
-                overlap++;
+    
+    std::vector<string> vector_sense(sense_tokens.begin(), sense_tokens.end());
+    std::vector<string> vector_context(context.begin(), context.end());
+    
+    auto const n = vector_sense.size();
+    auto const o = vector_context.size();
+    
+    for(auto i = 0u; i < n; i += tile_size){
+        for (auto j = 0u; j < o; j += tile_size){
+            for (auto k = 0u; k < tile_size; ++k){
+                if (k + i >= n)
+                    break;
+                for (auto l = 0u; l < tile_size; ++l){
+                    if (j + l >= o)
+                        break;
+                    if (boost::iequals(vector_sense[i + k], vector_context[j + l]))
+                        overlap++;
+                }
             }
         }
     }
+    
     return overlap;
 }
 
@@ -60,7 +79,7 @@ void get_all_senses(string word, vector<string> &all_senses) {
     string dictionary_name = "new_dictionary/";
     dictionary_name += word[0];
     dictionary_name += ".json";
-    std::ifstream i(dictionary_name);
+    std::ifstream i( dictionary_name);
     json j;
     i >> j;
 
@@ -99,8 +118,17 @@ string simplified_wsd(string word, string sentence) {
         if (overlap > max_overlap) {
             max_overlap = overlap;
             best_sense = all_senses[i];
+            
+            // cout << "best_sense: " << best_sense << "\n";
         }
     }
 
     return best_sense;
+}
+
+int main()
+{
+    cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
+    cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
+    return 0;
 }
