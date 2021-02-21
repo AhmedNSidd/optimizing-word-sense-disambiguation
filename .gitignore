@@ -1,3 +1,7 @@
+# Ignore benchmark library.
+benchmark/
+mybenchmark
+
 # Prerequisites
 *.d
 
