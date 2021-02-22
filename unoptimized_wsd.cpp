@@ -53,8 +53,8 @@ int compute_overlap(string sense, set<string> context) {
     
     for(auto i = 0u; i < n; i++){
         for (auto j = 0u; j < o; j++){
-                    if (boost::iequals(vector_sense[i], vector_context[j]))
-                        overlap++;
+            if (boost::iequals(vector_sense[i], vector_context[j]))
+                overlap++;
         }
     }
     return overlap;
