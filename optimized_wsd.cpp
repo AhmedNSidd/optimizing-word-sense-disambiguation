@@ -40,7 +40,7 @@ int compute_overlap(string sense, set<string> context) {
     */
     
     auto const cache_line_size = 64u;
-    auto const tile_size = cache_line_size / 8; // median word size is 4.7 characters, so we expect to easily fit 8 words into the cache.
+    auto const tile_size = cache_line_size / 5; // median word size is 4.7 characters, so we expect to easily fit 8 words into the cache.
     
     int overlap = 0;
     set<string> sense_tokens = tokenize_string(sense);
@@ -76,10 +76,13 @@ void get_all_senses(string word, vector<string> &all_senses) {
     It will then store all those senes in the given vector: all_senses
     */
     // read a JSON file
-    string dictionary_name = "new_dictionary/";
+    string dictionary_name = "final_dictionary/";
     dictionary_name += word[0];
+    if (word[1] != '\0')
+        dictionary_name += word[1];
     dictionary_name += ".json";
-    std::ifstream i( dictionary_name);
+
+    std::ifstream i(dictionary_name);
     json j;
     i >> j;
 

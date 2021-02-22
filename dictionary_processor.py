@@ -25,24 +25,36 @@ def break_up_definitions():
             f.write(json_string)
 
 
+"""
+Go through every key in the dictionary
+If the length is one, create a key with a dictionary with the same key-value pair inside.
+Else
+Check if the first + second letter key exists in dictionary. If not, then create one and add the curr key value pair.
+      else add the keyvalue pair in the existing first+second letter key dictionary.
+
+Go through every key and create a file for them
+
+"""
+
 def break_up_dictionary_by_characters():
     with open('dictionary.json', "r") as curr_dic:
         data = json.load(curr_dic)
-        last_char = "-"
-        f = open(last_char + ".json", "w")
-        curr_letter_dictionary = {}
+
+        files_dictionary = {}
         for key in data:
-            if key[0] != "-" and key[0] != last_char:
-                json_string = json.dumps(curr_letter_dictionary, sort_keys=True, separators=(',', ':'))
-                f.write(json_string)
-                f.close()
-                curr_letter_dictionary = {}
-                last_char = key[0]
-                f = open(last_char + ".json", "w")
-            curr_letter_dictionary[key] = data[key]
-        json_string = json.dumps(curr_letter_dictionary, sort_keys=True, separators=(',', ':'))
-        f.write(json_string)
-        f.close()
+            if len(key) == 1:
+                files_dictionary[key] = {key:data[key]}
+            else:
+                if (key[0] + key[1]) not in files_dictionary:
+                    files_dictionary[key[0] + key[1]] = {key:data[key]}
+                else:
+                    files_dictionary[key[0] + key[1]][key] = data[key]
+
+        for key in files_dictionary:
+            f = open(key + ".json", "w")
+            json_string = json.dumps(files_dictionary[key], sort_keys=True, separators=(',', ':'))
+            f.write(json_string)
+            f.close()
 
 
 def main():
