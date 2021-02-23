@@ -4,6 +4,7 @@ run:
 dependencies:
 	brew tap nlohmann/json
 	brew install nlohmann-json
+	@echo "If the above command didn't work, please figure out how to install it on your system: https://github.com/nlohmann/json. You might need to run sudo apt-get install nlohmann-json3-dev if you're working on linux "
 
 install_benchmark:
 	git clone https://github.com/google/benchmark.git
