@@ -16,21 +16,15 @@ devised in 1986.
 
 # Running the program 
 
-Create an executable using the following command:
-`g++ simplified_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -o output`
+This project has a Makefile that does a lot of the heavy lifting for you.
 
-Or alternatively build an object file:
-`g++ simplified_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o`
-
-And using this object file, you can create a library of the WSD program. 
-
-`ar rcs wsd.a output.o`
-
-Finally, you can use this wsd library to compile with the microbenchmarking
-program for microbenchmarking:
-
-`g++ benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o mybenchmark wsd.a`
-
-And then just run the executable:
-
-`./mybenchmark`
+If you want to run benchmarks on the implemented algorithm, you will first need
+to download the dependencies of this project. Run `make dependencies` and the
+appropriate libaries will be installed. Then you need to run `make install_benchmark`
+to install google's benchmark library. Then, you will need to build the executable
+You can do this simply by either doing `make unoptimized` (in your terminal in
+the root of the directory) to build the unoptimized, baseline version of the
+implemented algorithm, or you can run `make optimized` to build the optimized
+version of your implemented algorithm. After running either of those, just run
+`make` or `make run` to run the executable and get the runtime for 100 iterations
+of the implemented algorithm. 

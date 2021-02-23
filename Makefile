@@ -1,15 +1,17 @@
-AVERAGE_COUNT = 10
-
 run:
 	./mybenchmark
 
-# average:
-# 	@-combined_runtime=0; i=1; while [[ $$i -le ${AVERAGE_COUNT} ]] ; do \
-# 		current_runtime=$$(./mybenchmark | grep -m 1 -E -o '[0-9]{5,}' | head -1); \
-# 		((combined_runtime = combined_runtime + current_runtime)); \
-# 		((i = i + 1)); \
-# 	done; echo $$((combined_runtime / ${AVERAGE_COUNT}));
+dependencies:
+	brew tap nlohmann/json
+	brew install nlohmann-json
 
+install_benchmark:
+	git clone https://github.com/google/benchmark.git
+	git clone https://github.com/google/googletest.git benchmark/googletest
+	cd benchmark
+	cmake -E make_directory "build"
+	cmake -E chdir "build" cmake -DCMAKE_BUILD_TYPE=Release ../
+	cmake --build "build" --config Release
 
 unoptimized:
 	g++ -O0 unoptimized_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
