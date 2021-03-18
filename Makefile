@@ -1,9 +1,13 @@
-run:
-	./mybenchmark
+run_v2:
+	./output_v2
+
+run_v1:
+	./output_v1
 
 dependencies:
 	brew tap nlohmann/json
 	brew install nlohmann-json
+	brew install libomp
 	@echo "If the above command didn't work, please figure out how to install it on your system: https://github.com/nlohmann/json. You might need to run sudo apt-get install nlohmann-json3-dev if you're working on linux "
 
 install_benchmark:
@@ -14,12 +18,15 @@ install_benchmark:
 	cmake -E chdir "build" cmake -DCMAKE_BUILD_TYPE=Release ../
 	cmake --build "build" --config Release
 
-unoptimized:
-	g++ -O0 unoptimized_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
-	ar rcs wsd.a output.o
-	g++ -O0 benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o mybenchmark wsd.a
+optimized_v2:
+	g++ -Xpreprocessor -fopenmp optimized_wsd_v2.cpp -lomp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v2
 
-optimized:
-	g++ -O0 optimized_wsd.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
+unoptimized_v1:
+	g++ -O0 unoptimized_wsd_v2.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
 	ar rcs wsd.a output.o
-	g++ -O0 benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o mybenchmark wsd.a
+	g++ -O0 benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o output_v1 wsd.a
+
+optimized_v1:
+	g++ -O0 optimized_wsd_v2.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
+	ar rcs wsd.a output.o
+	g++ -O0 benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o output_v1 wsd.a
