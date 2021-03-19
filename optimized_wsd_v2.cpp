@@ -30,6 +30,8 @@ end return (best-sense)
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
 #include "wsd.hpp"
+#include "nmmintrin.h"
+#include "immintrin.h"
 
 using json = nlohmann::json;
 using namespace std;
@@ -48,12 +50,17 @@ int compute_overlap(string sense, set<string> context) {
     auto const n = vector_sense.size();
     auto const o = vector_context.size();
     
-    for(auto i = 0u; i < n; i++){
-        for (auto j = 0u; j < o; j++){
-            if (boost::iequals(vector_sense[i], vector_context[j]))
-                overlap++;
-        }
-    }
+    // for(auto i = 0u; i < n; i++){
+    //     for (auto j = 0u; j < o; j++){
+    //         if (boost::iequals(vector_sense[i], vector_context[j]))
+    //             overlap++;
+    //     }
+    // }
+
+    // TODO: Need to load in 16 bytes of characters 
+
+
+
     return overlap;
 }
 
