@@ -76,7 +76,7 @@ void get_all_senses(string word, vector<string> &all_senses) {
     It will then store all those senes in the given vector: all_senses
     */
     // read a JSON file
-    string dictionary_name = "final_dictionary/";
+    string dictionary_name = "/Users/ahmedsiddiqui/Workspace/UVic/Winter_2021/CSC485C/wsd-485c/final_dictionary/";
     dictionary_name += word[0];
     if (word[1] != '\0')
         dictionary_name += word[1];
