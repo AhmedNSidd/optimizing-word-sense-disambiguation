@@ -18,15 +18,14 @@ install_benchmark:
 	cmake -E chdir "build" cmake -DCMAKE_BUILD_TYPE=Release ../
 	cmake --build "build" --config Release
 
+unoptimized_v2:
+	g++ unoptimized_wsd_v2.cpp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v2
+
 optimized_v2:
 	g++ -Xpreprocessor -fopenmp optimized_wsd_v2.cpp -lomp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v2
 
 unoptimized_v1:
-	g++ -O0 unoptimized_wsd_v2.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
-	ar rcs wsd.a output.o
-	g++ -O0 benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o output_v1 wsd.a
+	g++ unoptimized_wsd_v1.cpp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v1
 
 optimized_v1:
-	g++ -O0 optimized_wsd_v2.cpp -I/usr/local/Cellar/nlohmann-json/3.7.3/include -std=c++11 -c -o output.o
-	ar rcs wsd.a output.o
-	g++ -O0 benchmark.cc -std=c++11 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o output_v1 wsd.a
+	g++ optimized_wsd_v1.cpp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v1
