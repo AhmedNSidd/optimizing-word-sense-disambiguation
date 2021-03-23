@@ -29,31 +29,83 @@ end return (best-sense)
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
-#include "wsd.hpp"
+#include "wsd_v2.hpp"
+
+#include <emmintrin.h>
+#include <immintrin.h>
+#include "nmmintrin.h"
 
 using json = nlohmann::json;
 using namespace std;
 
 
-int compute_overlap(string sense, set<string> context) {
+string remove_punctuation(string str) {
+    string result;
+    std::remove_copy_if(str.begin(), str.end(),            
+                std::back_inserter(result), //Store output           
+                ::ispunct);
+
+    return result;
+}
+
+
+int hash_string(string str) {
+    /* 
+    Need to lowercase first, and then hash it. 
+    */
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    std::hash<std::string> hasher;
+    return hasher(str);
+}
+
+
+int compute_overlap(string sense, set<int> context) {
     /*
     In this function, we want to go tokenize the sense. After that, we want to compute the
     */    
     int overlap = 0;
-    set<string> sense_tokens = tokenize_string(sense);
+    set<int> sense_tokens = tokenize_string(sense);
     
-    std::vector<string> vector_sense(sense_tokens.begin(), sense_tokens.end());
-    std::vector<string> vector_context(context.begin(), context.end());
+    vector<int> vector_sense(sense_tokens.begin(), sense_tokens.end());
+    vector<int> vector_context(context.begin(), context.end());
     
-    auto const n = vector_sense.size();
-    auto const o = vector_context.size();
-    
-    for(auto i = 0u; i < n; i++){
-        for (auto j = 0u; j < o; j++){
-            if (boost::iequals(vector_sense[i], vector_context[j]))
-                overlap++;
+    auto const sense_len = vector_sense.size();
+    auto const context_len = vector_context.size();
+
+    // Add padding to both vectors for effective SIMD access
+
+    while (vector_sense.size() % 4 != 0)
+        vector_sense.push_back(1);
+
+    vector_context.push_back(2);
+    vector_context.push_back(2);
+    vector_context.push_back(2);
+    std::reverse(vector_context.begin(), vector_context.end());
+    vector_context.push_back(2);
+    vector_context.push_back(2);
+    vector_context.push_back(2);
+
+    for (int i = 0; i < sense_len; i += 4) {
+        __m128i simd_sense = _mm_loadu_si128((__m128i const*) &vector_sense[i]);
+        for (int j = 0; j < context_len - 3; j++) {
+            __m128i simd_context = _mm_loadu_si128((__m128i const*) &vector_context[i]);
+            __m128i equality_results = _mm_cmpeq_epi32(simd_sense, simd_context);
+            equality_results = _mm_hadd_epi32(equality_results, equality_results);
+            equality_results = _mm_hadd_epi32(equality_results, equality_results);
+            overlap += _mm_extract_epi32(equality_results, 0) * -1;
         }
     }
+
+    // for (int i = 0; i < sense_len; i++) {
+    //     // cout << hash_word_dictionary[vector_sense[i]] << "\n";
+    //     for (int j = 0; j < context_len; j++) {
+    //         // cout << hash_word_dictionary[vector_context[j]] << "\n";
+    //         if (vector_sense[i] == vector_context[j]) {
+    //             overlap++;
+    //         }
+    //     }
+    // }
+
     return overlap;
 }
 
@@ -77,18 +129,18 @@ vector<string> get_all_senses(string word) {
     return j[word];
 }
 
-set<string> get_word_set(string word, string sentence) {
-    set<string> words = tokenize_string(sentence);
-    words.erase(word);
+set<int> get_word_set(string word, string sentence) {
+    set<int> words = tokenize_string(sentence);
+    words.erase(hash_string(word));
     return words;
 }
 
-set<string> tokenize_string(string sentence) {
+set<int> tokenize_string(string sentence) {
     stringstream stream(sentence);
-    set<string> words;
+    set<int> words;
     string tmp;
     while (getline(stream, tmp, ' ')) {
-        words.insert(tmp);
+        words.insert(hash_string(remove_punctuation(tmp)));
     }
     
     return words;
@@ -99,7 +151,7 @@ string simplified_wsd(string word, string sentence) {
     string best_sense;
     int max_overlap = 0;
 
-    set<string> context = get_word_set(word, sentence); // This is the set of words in a sentence excluding the word itself.
+    set<int> context = get_word_set(word, sentence); // This is the set of words in a sentence excluding the word itself hashed as ints
     vector<string> all_senses = get_all_senses(word); // This is all the senses of the word.
 
     vector<int> overlaps(all_senses.size());
@@ -147,7 +199,7 @@ int main(int argc, char ** argv)
         omp_set_num_threads(atoi(argv[ 1 ]));
     }
     
-    simplified_wsd("set", "It was a great day of tennis. Game, set, match");
+    cout << simplified_wsd("set", "It was a great day of tennis. Game, set, match");
     
     // auto end = chrono::steady_clock::now();
     // auto diff = end - start;

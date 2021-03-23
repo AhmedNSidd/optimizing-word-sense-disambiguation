@@ -112,9 +112,21 @@ string simplified_wsd(string word, string sentence) {
     return best_sense;
 }
 
-// int main()
-// {
-//     cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
-//     cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
-//     return 0;
-// }
+int main(void )
+{
+    /*
+     cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
+     cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
+     */
+    
+    // auto start = chrono::steady_clock::now();
+    
+    simplified_wsd("set", "It was a great day of tennis. Game, set, match");
+    
+    // auto end = chrono::steady_clock::now();
+    // auto diff = end - start;
+    
+    // cout << "Total time to run was: " << chrono::duration <double, milli> (diff).count() << " ms" << endl;
+    
+     return 0;
+}

@@ -116,6 +116,7 @@ string simplified_wsd(string word, string sentence) {
     set<string> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
     vector<string> all_senses; // This is all the senses of the word.
     get_all_senses(word, all_senses);
+    auto const start = chrono::steady_clock::now();
     for (int i = 0; i < all_senses.size(); i++) {
         int overlap = compute_overlap(all_senses[i], context);
         if (overlap > max_overlap) {
@@ -125,13 +126,29 @@ string simplified_wsd(string word, string sentence) {
             // cout << "best_sense: " << best_sense << "\n";
         }
     }
+    auto const end = chrono::steady_clock::now();
+    
+    cout << "Time to run compute overlap was: " << chrono::duration <double, milli> (end - start).count() << " ms" << endl;
+
 
     return best_sense;
 }
 
-// int main()
-// {
-//     cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
-//     cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
-//     return 0;
-// }
+int main(void )
+{
+    /*
+     cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
+     cout << "The best sense of the word stock in our example is:\n" << simplified_wsd("stock", "I'm expecting to make a lot of money from the stocks I'm investing in using my bank account.") << "\n";
+     */
+    
+    // auto start = chrono::steady_clock::now();
+    
+    simplified_wsd("set", "It was a great day of tennis. Game, set, match");
+    
+    // auto end = chrono::steady_clock::now();
+    // auto diff = end - start;
+    
+    // cout << "Total time to run was: " << chrono::duration <double, milli> (diff).count() << " ms" << endl;
+    
+     return 0;
+}

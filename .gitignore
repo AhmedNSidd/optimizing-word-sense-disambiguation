@@ -2,6 +2,9 @@
 benchmark/
 mybenchmark
 
+# Ignores all output files
+output* 
+
 # Prerequisites
 *.d
 

@@ -21,7 +21,6 @@ end return (best-sense)
 
 */
 
-#include <omp.h>
 #include <iostream>
 #include <string>
 #include <set>
@@ -29,31 +28,55 @@ end return (best-sense)
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
-#include "wsd.hpp"
+#include "wsd_v2.hpp"
 
 using json = nlohmann::json;
 using namespace std;
 
 
-int compute_overlap(string sense, set<string> context) {
+string remove_punctuation(string str) {
+    string result;
+    std::remove_copy_if(str.begin(), str.end(),            
+                std::back_inserter(result), //Store output           
+                ::ispunct);
+
+    return result;
+}
+
+
+int hash_string(string str) {
+    /* 
+    Need to lowercase first, and then hash it. 
+    */
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    std::hash<std::string> hasher;
+    return hasher(str);
+}
+
+
+int compute_overlap(string sense, set<int> context) {
     /*
     In this function, we want to go tokenize the sense. After that, we want to compute the
     */    
     int overlap = 0;
-    set<string> sense_tokens = tokenize_string(sense);
+    set<int> sense_tokens = tokenize_string(sense);
     
-    std::vector<string> vector_sense(sense_tokens.begin(), sense_tokens.end());
-    std::vector<string> vector_context(context.begin(), context.end());
+    vector<int> vector_sense(sense_tokens.begin(), sense_tokens.end());
+    vector<int> vector_context(context.begin(), context.end());
     
-    auto const n = vector_sense.size();
-    auto const o = vector_context.size();
-    
-    for(auto i = 0u; i < n; i++){
-        for (auto j = 0u; j < o; j++){
-            if (boost::iequals(vector_sense[i], vector_context[j]))
+    auto const sense_len = vector_sense.size();
+    auto const context_len = vector_context.size();
+
+    for (int i = 0; i < sense_len; i++) {
+        // cout << hash_word_dictionary[vector_sense[i]] << "\n";
+        for (int j = 0; j < context_len; j++) {
+            // cout << hash_word_dictionary[vector_context[j]] << "\n";
+            if (vector_sense[i] == vector_context[j]) {
                 overlap++;
+            }
         }
     }
+
     return overlap;
 }
 
@@ -77,18 +100,18 @@ vector<string> get_all_senses(string word) {
     return j[word];
 }
 
-set<string> get_word_set(string word, string sentence) {
-    set<string> words = tokenize_string(sentence);
-    words.erase(word);
+set<int> get_word_set(string word, string sentence) {
+    set<int> words = tokenize_string(sentence);
+    words.erase(hash_string(word));
     return words;
 }
 
-set<string> tokenize_string(string sentence) {
+set<int> tokenize_string(string sentence) {
     stringstream stream(sentence);
-    set<string> words;
+    set<int> words;
     string tmp;
     while (getline(stream, tmp, ' ')) {
-        words.insert(tmp);
+        words.insert(hash_string(remove_punctuation(tmp)));
     }
     
     return words;
@@ -98,21 +121,12 @@ set<string> tokenize_string(string sentence) {
 string simplified_wsd(string word, string sentence) {
     string best_sense;
     int max_overlap = 0;
-
-    set<string> context = get_word_set(word, sentence); // This is the set of words in a sentence excluding the word itself.
-    vector<string> all_senses = get_all_senses(word); // This is all the senses of the word.
-
-    vector<int> overlaps(all_senses.size());
-    
-    // TIMING BEGIN
+    set<int> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
+    vector<string> all_senses= get_all_senses(word);
+        // TIMING BEGIN
     auto const start = chrono::steady_clock::now();
-
-    #pragma omp parallel for
-    for (int i = 0; i < all_senses.size(); i++)
-        overlaps[i] = compute_overlap(all_senses[i], context);
-    
-    for (int i = 0; i < all_senses.size(); i++){
-        int overlap = overlaps[i];
+    for (int i = 0; i < all_senses.size(); i++) {
+        int overlap = compute_overlap(all_senses[i], context);
         if (overlap > max_overlap) {
             max_overlap = overlap;
             best_sense = all_senses[i];
@@ -120,11 +134,10 @@ string simplified_wsd(string word, string sentence) {
             // cout << "best_sense: " << best_sense << "\n";
         }
     }
-    
     auto const end = chrono::steady_clock::now();
     
     cout << "Time to run compute overlap was: " << chrono::duration <double, milli> (end - start).count() << " ms" << endl;
-    // TIMING END
+
 
     return best_sense;
 }
@@ -137,15 +150,6 @@ int main(int argc, char ** argv)
      */
     
     // auto start = chrono::steady_clock::now();
-
-    if( argc >= 2 )
-    {
-        // omp_set_num_threads() sets the global number of threads used by OpenMP
-        // If this is not set, then it defaults to the number of cores on the machine
-        // Here, we take the value from the first command line argument (`argv[ 1 ]`),
-        // after converting it from ascii to int (the `atoi()` function).
-        omp_set_num_threads(atoi(argv[ 1 ]));
-    }
     
     simplified_wsd("set", "It was a great day of tennis. Game, set, match");
     
