@@ -18,6 +18,9 @@ install_benchmark:
 	cmake -E chdir "build" cmake -DCMAKE_BUILD_TYPE=Release ../
 	cmake --build "build" --config Release
 
+unoptimized_v3:
+	g++ unoptimized_wsd_v3.cpp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v3
+
 unoptimized_v2:
 	g++ unoptimized_wsd_v2.cpp -I/usr/local/Cellar/nlohmann-json/3.9.1_1/include -std=c++11 -o output_v2
 
