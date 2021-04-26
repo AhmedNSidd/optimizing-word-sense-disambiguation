@@ -21,10 +21,12 @@ end return (best-sense)
 
 */
 
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <set>
 #include <vector>
+#include <sstream>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <boost/algorithm/string.hpp>
@@ -87,7 +89,7 @@ vector<string> get_all_senses(string word) {
     It will then store all those senes in the given vector: all_senses
     */
     // read a JSON file
-    string dictionary_name = "/Users/ahmedsiddiqui/Workspace/UVic/Winter_2021/CSC485C/wsd-485c/final_dictionary/";
+    string dictionary_name = "final_dictionary/";
     dictionary_name += word[0];
     if (word[1] != '\0')
         dictionary_name += word[1];
