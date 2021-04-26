@@ -22,17 +22,15 @@ end return (best-sense)
 */
 
 #include <chrono>
-#include <iostream>
 #include <string>
 #include <set>
 #include <vector>
-#include <sstream>
 #include <fstream>
-#include <nlohmann/json.hpp>
-#include <boost/algorithm/string.hpp>
+#include <sstream>
+#include "picojson.h"
 #include "wsd_v2.hpp"
 
-using json = nlohmann::json;
+using namespace picojson;
 using namespace std;
 
 
@@ -96,10 +94,16 @@ vector<string> get_all_senses(string word) {
     dictionary_name += ".json";
 
     std::ifstream i(dictionary_name);
-    json j;
-    i >> j;
+    value v;
+    i >> v;
 
-    return j[word];
+    std::vector<std::string> items; 
+    std::vector<picojson::value> tmp = v.get(word).get<picojson::array>();
+    for (int i = 0; i < tmp.size(); i++) {
+        items.push_back(tmp[i].get<std::string>());
+    }
+
+    return items;
 }
 
 set<int> get_word_set(string word, string sentence) {
