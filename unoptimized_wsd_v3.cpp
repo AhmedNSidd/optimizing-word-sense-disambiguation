@@ -22,65 +22,56 @@ end return (best-sense)
 */
 
 #include <chrono>
+#include <iostream>
 #include <string>
 #include <set>
 #include <vector>
-#include <fstream>
 #include <sstream>
-#include "picojson.h"
-#include "wsd_v2.hpp"
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <boost/algorithm/string.hpp>
+#include "wsd.hpp"
 
-using namespace picojson;
+using json = nlohmann::json;
 using namespace std;
 
 
-string remove_punctuation(string str) {
-    string result;
-    std::remove_copy_if(str.begin(), str.end(),            
-                std::back_inserter(result), //Store output           
-                ::ispunct);
-
-    return result;
-}
-
-
-int hash_string(string str) {
-    /* 
-    Need to lowercase first, and then hash it. 
-    */
-    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-    std::hash<std::string> hasher;
-    return hasher(str);
-}
-
-
-int compute_overlap(string sense, set<int> context) {
+int compute_overlap(string sense, set<string> context) {
     /*
     In this function, we want to go tokenize the sense. After that, we want to compute the
-    */    
+    */
+    
+    auto const cache_line_size = 64u;
+    auto const tile_size = cache_line_size / 5; // median word size is 4.7 characters, so we expect to easily fit 8 words into the cache.
+    
     int overlap = 0;
-    set<int> sense_tokens = tokenize_string(sense);
+    set<string> sense_tokens = tokenize_string(sense);
     
-    vector<int> vector_sense(sense_tokens.begin(), sense_tokens.end());
-    vector<int> vector_context(context.begin(), context.end());
+    std::vector<string> vector_sense(sense_tokens.begin(), sense_tokens.end());
+    std::vector<string> vector_context(context.begin(), context.end());
     
-    auto const sense_len = vector_sense.size();
-    auto const context_len = vector_context.size();
-
-    for (int i = 0; i < sense_len; i++) {
-        // cout << hash_word_dictionary[vector_sense[i]] << "\n";
-        for (int j = 0; j < context_len; j++) {
-            // cout << hash_word_dictionary[vector_context[j]] << "\n";
-            if (vector_sense[i] == vector_context[j]) {
-                overlap++;
+    auto const n = vector_sense.size();
+    auto const o = vector_context.size();
+    
+    for(auto i = 0u; i < n; i += tile_size){
+        for (auto j = 0u; j < o; j += tile_size){
+            for (auto k = 0u; k < tile_size; ++k){
+                if (k + i >= n)
+                    break;
+                for (auto l = 0u; l < tile_size; ++l){
+                    if (j + l >= o)
+                        break;
+                    if (boost::iequals(vector_sense[i + k], vector_context[j + l]))
+                        overlap++;
+                }
             }
         }
     }
-
+    
     return overlap;
 }
 
-vector<string> get_all_senses(string word) {
+void get_all_senses(string word, vector<string> &all_senses) {
     /* 
     This function will query dictionary.json and get the definition of the
     word. It will then parse through the definition and get all the senses.
@@ -94,30 +85,27 @@ vector<string> get_all_senses(string word) {
     dictionary_name += ".json";
 
     std::ifstream i(dictionary_name);
-    value v;
-    i >> v;
+    json j;
+    i >> j;
 
-    std::vector<std::string> items; 
-    std::vector<picojson::value> tmp = v.get(word).get<picojson::array>();
-    for (int i = 0; i < tmp.size(); i++) {
-        items.push_back(tmp[i].get<std::string>());
+    vector<string> definitions = j[word];
+    for (int i = 0; i < definitions.size(); i++) {
+        all_senses.push_back(definitions[i]);
     }
-
-    return items;
 }
 
-set<int> get_word_set(string word, string sentence) {
-    set<int> words = tokenize_string(sentence);
-    words.erase(hash_string(word));
+set<string> get_word_set(string word, string sentence) {
+    set<string> words = tokenize_string(sentence);
+    words.erase(word);
     return words;
 }
 
-set<int> tokenize_string(string sentence) {
+set<string> tokenize_string(string sentence) {
     stringstream stream(sentence);
-    set<int> words;
+    set<string> words;
     string tmp;
     while (getline(stream, tmp, ' ')) {
-        words.insert(hash_string(remove_punctuation(tmp)));
+        words.insert(tmp);
     }
     
     return words;
@@ -127,9 +115,9 @@ set<int> tokenize_string(string sentence) {
 string simplified_wsd(string word, string sentence) {
     string best_sense;
     int max_overlap = 0;
-    set<int> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
-    vector<string> all_senses= get_all_senses(word);
-        // TIMING BEGIN
+    set<string> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
+    vector<string> all_senses; // This is all the senses of the word.
+    get_all_senses(word, all_senses);
     auto const start = chrono::steady_clock::now();
     for (int i = 0; i < all_senses.size(); i++) {
         int overlap = compute_overlap(all_senses[i], context);
@@ -148,7 +136,7 @@ string simplified_wsd(string word, string sentence) {
     return best_sense;
 }
 
-int main(int argc, char ** argv)
+int main(void )
 {
     /*
      cout << "Find the best sense of the word 'stock' in the following sentence:\n\tI'm expecting to make a lot of money from the stocks I'm investing in using my bank account.\n";
@@ -157,7 +145,7 @@ int main(int argc, char ** argv)
     
     // auto start = chrono::steady_clock::now();
     
-    simplified_wsd("set", "It was a great day of tennis. Game, set, match");
+    simplified_wsd("set", "My opponent won the first set in our tennis game.");
     
     // auto end = chrono::steady_clock::now();
     // auto diff = end - start;
