@@ -27,11 +27,15 @@ end return (best-sense)
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <stdio.h>
 #include "picojson.h"
-#include "wsd_v2.hpp"
+#include "wsd_v3.cuh"
 
 using namespace picojson;
 using namespace std;
+
+#define MAX_SENSE_SIZE 100
 
 
 string remove_punctuation(string str) {
@@ -43,7 +47,6 @@ string remove_punctuation(string str) {
     return result;
 }
 
-
 int hash_string(string str) {
     /* 
     Need to lowercase first, and then hash it. 
@@ -54,30 +57,19 @@ int hash_string(string str) {
 }
 
 
-int compute_overlap(string sense, set<int> context) {
-    /*
-    In this function, we want to go tokenize the sense. After that, we want to compute the
-    */    
-    int overlap = 0;
-    set<int> sense_tokens = tokenize_string(sense);
-    
-    vector<int> vector_sense(sense_tokens.begin(), sense_tokens.end());
-    vector<int> vector_context(context.begin(), context.end());
-    
-    auto const sense_len = vector_sense.size();
-    auto const context_len = vector_context.size();
-
-    for (int i = 0; i < sense_len; i++) {
-        // cout << hash_word_dictionary[vector_sense[i]] << "\n";
-        for (int j = 0; j < context_len; j++) {
-            // cout << hash_word_dictionary[vector_context[j]] << "\n";
-            if (vector_sense[i] == vector_context[j]) {
-                overlap++;
+__global__ 
+void compute_overlap(const int *senses, const int *context, int *overlaps, int senses_size, int context_size) {
+    int sense_index = (threadIdx.x + blockIdx.x * blockDim.x) * MAX_SENSE_SIZE;
+    if (sense_index < senses_size) {
+        for (int i = sense_index; i < sense_index + MAX_SENSE_SIZE; i++) {
+            if (senses[i] == -1) {
+                break;
+            }
+            for (int j = 0; j < context_size; j++) {
+                overlaps[sense_index/MAX_SENSE_SIZE] += (senses[i] == context[j]);
             }
         }
     }
-
-    return overlap;
 }
 
 vector<string> get_all_senses(string word) {
@@ -106,13 +98,13 @@ vector<string> get_all_senses(string word) {
     return items;
 }
 
-set<int> get_word_set(string word, string sentence) {
-    set<int> words = tokenize_string(sentence);
-    words.erase(hash_string(word));
+vector<int> get_word_set(string word, string sentence) {
+    vector<int> words = tokenize_string(sentence);
+    words.erase(std::remove(words.begin(), words.end(), hash_string(word)), words.end());
     return words;
 }
 
-set<int> tokenize_string(string sentence) {
+vector<int> tokenize_string(string sentence) {
     stringstream stream(sentence);
     set<int> words;
     string tmp;
@@ -120,31 +112,62 @@ set<int> tokenize_string(string sentence) {
         words.insert(hash_string(remove_punctuation(tmp)));
     }
     
-    return words;
+    return vector<int>(words.begin(), words.end());
 }
 
-
+// We need to turn compute overlap into a kernel function.
+// We need to get rid of the for loop, create dev_senses, dev_context, 
+// and send in a results array to compute_overlap, 
+// cudaMalloc, cudaMemcpy, cudaFree them up, then 
+// find the max result from that array 
 string simplified_wsd(string word, string sentence) {
     string best_sense;
     int max_overlap = 0;
-    set<int> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
-    vector<string> all_senses= get_all_senses(word);
-        // TIMING BEGIN
-    auto const start = chrono::steady_clock::now();
+    vector<int> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
+    vector<string> all_senses = get_all_senses(word);
+    vector<int> hashed_sense_tokens; 
     for (int i = 0; i < all_senses.size(); i++) {
-        int overlap = compute_overlap(all_senses[i], context);
-        if (overlap > max_overlap) {
-            max_overlap = overlap;
-            best_sense = all_senses[i];
-            
-            // cout << "best_sense: " << best_sense << "\n";
+        // for every sense, we want to tokenize the string, then for every token, we want to add that to a new vector. 
+        vector<int> tokens = tokenize_string(all_senses[i]);
+        for (int j = 0; j < tokens.size(); j++) {
+            hashed_sense_tokens.push_back(tokens[j]);
+        }
+        while (hashed_sense_tokens.size() % MAX_SENSE_SIZE != 0) {
+            hashed_sense_tokens.push_back(-1);
         }
     }
+    int *dev_senses;
+    int *dev_context;
+    int *dev_results;
+    int overlaps[all_senses.size()];
+    int const block_size = 128;
+    cudaMalloc((void **) &dev_senses, all_senses.size() * MAX_SENSE_SIZE * sizeof(hashed_sense_tokens[0]));
+    cudaMalloc((void **) &dev_context, context.size() * sizeof(context[0]));
+    cudaMalloc((void **) &dev_results, all_senses.size() * sizeof(int));
+
+    cudaMemcpy(dev_senses, &hashed_sense_tokens[0], hashed_sense_tokens.size() * sizeof(hashed_sense_tokens[0]), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_context, &context[0], context.size() * sizeof(context[0]), cudaMemcpyHostToDevice);
+    auto const num_blocks = ceil(all_senses.size() / static_cast<float>(block_size));
+    auto const start = chrono::steady_clock::now();
+
+    compute_overlap<<<num_blocks, block_size>>>(dev_senses, dev_context, dev_results, all_senses.size() * MAX_SENSE_SIZE, context.size());
+    cudaMemcpy(overlaps, dev_results, all_senses.size() * sizeof(int), cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < all_senses.size(); i++) {
+        if (overlaps[i] > max_overlap) {
+            best_sense = all_senses[i];
+            max_overlap = overlaps[i];
+        }
+    }
+
     auto const end = chrono::steady_clock::now();
+
+    cudaFree(dev_results);
+    cudaFree(dev_context);
+    cudaFree(dev_senses);
     
     cout << "Time to run compute overlap was: " << chrono::duration <double, milli> (end - start).count() << " ms" << endl;
-
-
+    cout << "best sense is " << best_sense << endl;
     return best_sense;
 }
 
@@ -157,7 +180,7 @@ int main(int argc, char ** argv)
     
     // auto start = chrono::steady_clock::now();
     
-    simplified_wsd("set", "It was a great day of tennis. Game, set, match");
+    simplified_wsd("set", "My opponent won the first set in our tennis game.");
     
     // auto end = chrono::steady_clock::now();
     // auto diff = end - start;
