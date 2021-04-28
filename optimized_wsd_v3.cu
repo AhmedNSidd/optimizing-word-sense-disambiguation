@@ -35,7 +35,7 @@ end return (best-sense)
 using namespace picojson;
 using namespace std;
 
-#define MAX_SENSE_SIZE 100
+#define MAX_SENSE_SIZE 300
 
 
 string remove_punctuation(string str) {
@@ -70,6 +70,7 @@ void compute_overlap(const int *senses, const int *context, int *overlaps, int s
             }
         }
     }
+    __syncthreads();
 }
 
 vector<string> get_all_senses(string word) {
@@ -122,7 +123,7 @@ vector<int> tokenize_string(string sentence) {
 // find the max result from that array 
 string simplified_wsd(string word, string sentence) {
     string best_sense;
-    int max_overlap = 0;
+    int max_overlap = -1;
     vector<int> context = get_word_set(word, sentence);// This is the set of words in a sentence excluding the word itself.
     vector<string> all_senses = get_all_senses(word);
     vector<int> hashed_sense_tokens; 
@@ -140,7 +141,7 @@ string simplified_wsd(string word, string sentence) {
     int *dev_context;
     int *dev_results;
     int overlaps[all_senses.size()];
-    int const block_size = 128;
+    int const block_size = 960;
     cudaMalloc((void **) &dev_senses, all_senses.size() * MAX_SENSE_SIZE * sizeof(hashed_sense_tokens[0]));
     cudaMalloc((void **) &dev_context, context.size() * sizeof(context[0]));
     cudaMalloc((void **) &dev_results, all_senses.size() * sizeof(int));
@@ -167,7 +168,7 @@ string simplified_wsd(string word, string sentence) {
     cudaFree(dev_senses);
     
     cout << "Time to run compute overlap was: " << chrono::duration <double, milli> (end - start).count() << " ms" << endl;
-    cout << "best sense is " << best_sense << endl;
+
     return best_sense;
 }
 
@@ -180,7 +181,7 @@ int main(int argc, char ** argv)
     
     // auto start = chrono::steady_clock::now();
     
-    simplified_wsd("set", "My opponent won the first set in our tennis game.");
+    simplified_wsd("set", "It was a great day of tennis. Game, set, match. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent in nunc ac metus condimentum volutpat. Vivamus ornare orci nec congue cursus. Curabitur ultricies sem eget metus lacinia, faucibus sagittis odio porta. Cras mollis malesuada justo sit amet fringilla. Fusce dolor est, pulvinar sit amet eleifend sollicitudin, pulvinar vel libero. Nunc nulla diam, vulputate in cursus in, faucibus non arcu. Phasellus semper tempus maximus. Mauris turpis velit, pulvinar eget tempor sit amet, pharetra id ante. Pellentesque blandit ac magna vel condimentum. Aenean aliquet pellentesque turpis sit amet eleifend. In dolor ligula, tempor non lacus euismod, blandit iaculis ex.Vestibulum maximus facilisis condimentum. Maecenas pretium malesuada nisi. Duis nec turpis vel justo mattis facilisis. Sed vulputate nulla in diam ultricies mollis vitae non dui. Nam nec tellus interdum lorem suscipit mollis. Aenean et nisl euismod, blandit augue sit amet, pellentesque tellus. Curabitur maximus mollis nibh eget mattis. Duis varius hendrerit euismod. Ut ac ipsum imperdiet, pretium purus et, aliquet risus. Nam nisi mauris, maximus ac venenatis a, lacinia ut nibh. Praesent id ligula volutpat, mollis orci ac, iaculis ligula. Aliquam pretium tortor posuere urna vestibulum efficitur. Suspendisse aliquet diam nec lectus consectetur, ut condimentum est consectetur. Vivamus blandit interdum leo quis tincidunt.Suspendisse potenti. Duis volutpat justo at eros lacinia feugiat. In sit amet volutpat turpis. Nulla tempor imperdiet elit, in vulputate urna placerat eu. Integer congue dolor nisi, vitae sagittis purus eleifend id. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Ut libero arcu, tempus sollicitudin leo a, euismod maximus ex. Nunc varius aliquet metus, a fermentum ligula sagittis vitae.Integer hendrerit nunc eget urna rutrum, ut viverra ligula tincidunt. Nulla viverra orci lectus, ut varius erat viverra ut. Proin ac lacus congue, bibendum lorem ut, placerat ex. Mauris a rhoncus sapien. Pellentesque vel ultricies tortor, at hendrerit metus. Nunc cursus commodo facilisis. In tempor neque ut condimentum cursus. Mauris ut erat facilisis, pulvinar lectus vitae, euismod erat. Nullam feugiat sollicitudin finibus. Cras ante quam, tincidunt sed ultrices quis, rutrum vel nibh. Suspendisse eu velit vitae tellus porttitor mollis a eget lectus. Sed vel nisl sed dui elementum feugiat. Fusce fermentum ex vel mi pellentesque, a ultrices erat vehicula. Aenean auctor erat eu justo tristique, eget fringilla augue commodo.Phasellus vel risus ante. Cras tristique neque velit, et suscipit metus maximus ut. Proin quis sem purus. Maecenas pharetra at felis eget pellentesque. Fusce blandit libero eget massa efficitur semper. Nulla eget euismod enim. Sed id enim ac eros luctus sodales in maximus mi.");
     
     // auto end = chrono::steady_clock::now();
     // auto diff = end - start;
